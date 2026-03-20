@@ -1,0 +1,546 @@
+<!doctype html>
+<html lang="{{ state.language }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ ui.app_name }}</title>
+  <style>
+    :root {
+      --bg-media: {% if background_url %}url({{ background_url|tojson }}){% else %}none{% endif %};
+      --bg: #030712;
+      --panel: rgba(6, 14, 27, .84);
+      --panel-2: rgba(9, 20, 38, .88);
+      --line: rgba(126, 167, 255, .18);
+      --text: #eef4ff;
+      --muted: #98a9c8;
+      --accent: #6ca8ff;
+      --accent-2: #8eefff;
+      --danger: #ff688f;
+      --shadow: 0 24px 60px rgba(0, 0, 0, .35);
+      --radius: 22px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Bahnschrift", "Trebuchet MS", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(108,168,255,.16), transparent 30%),
+        radial-gradient(circle at top right, rgba(142,239,255,.1), transparent 24%),
+        linear-gradient(160deg, #040915, #02050b 52%, #071120);
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      background-image: linear-gradient(180deg, rgba(2,6,14,.18), rgba(2,6,14,.62)), var(--bg-media);
+      background-size: cover;
+      background-position: center;
+      filter: saturate(1.05) brightness(.48);
+      transform: scale(1.05);
+      animation: drift 24s linear infinite alternate;
+      pointer-events: none;
+    }
+    @keyframes drift { from { transform: scale(1.03) translate3d(0,0,0); } to { transform: scale(1.08) translate3d(-1%,1%,0); } }
+    .shell { width: min(1380px, calc(100% - 28px)); margin: 0 auto; padding: 24px 0 36px; }
+    .hero, .card {
+      background: linear-gradient(180deg, var(--panel), var(--panel-2));
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(18px);
+    }
+    .hero { padding: 28px; display: grid; gap: 16px; margin-bottom: 18px; }
+    .hero-grid, .dashboard, .panel-grid, .arcade { display: grid; gap: 18px; }
+    .hero-grid, .dashboard { grid-template-columns: 1.05fr .95fr; }
+    .panel-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
+    .arcade { grid-template-columns: repeat(3, minmax(0,1fr)); }
+    .stack { display: grid; gap: 18px; align-content: start; }
+    .card { padding: 20px; display: grid; gap: 16px; }
+    h1, h2, h3, p { margin: 0; }
+    .eyebrow { color: var(--accent-2); font-size: 12px; letter-spacing: .18em; text-transform: uppercase; }
+    .title { font-size: clamp(2rem, 4vw, 3.6rem); line-height: .96; max-width: 12ch; }
+    .sub, .hint, small, .footnote { color: var(--muted); line-height: 1.55; }
+    .chips, .actions { display: flex; flex-wrap: wrap; gap: 10px; }
+    .chip, .msg, .box, .item, .preview, .game, .calc {
+      background: rgba(4, 11, 23, .8);
+      border: 1px solid rgba(126, 167, 255, .16);
+      border-radius: 18px;
+    }
+    .chip { padding: 9px 13px; border-radius: 999px; font-size: 13px; color: var(--muted); }
+    .msg, .box, .preview, .calc { padding: 16px; }
+    .item, .provider { display: grid; grid-template-columns: 1fr auto; gap: 14px; align-items: center; padding: 14px; }
+    .list, .providers, .recs, .lyrics { display: grid; gap: 12px; }
+    form { margin: 0; }
+    input, select, textarea, button, a.button {
+      font: inherit;
+      border-radius: 14px;
+      border: 1px solid rgba(126, 167, 255, .16);
+      transition: 160ms ease;
+    }
+    input, select, textarea {
+      width: 100%;
+      padding: 12px 14px;
+      background: rgba(3, 9, 18, .92);
+      color: var(--text);
+      resize: vertical;
+    }
+    input:focus, select:focus, textarea:focus { outline: none; border-color: rgba(142,239,255,.55); box-shadow: 0 0 0 4px rgba(108,168,255,.12); }
+    button, a.button {
+      padding: 12px 16px;
+      cursor: pointer;
+      color: white;
+      text-decoration: none;
+      background: linear-gradient(135deg, rgba(108,168,255,.94), rgba(78,106,221,.94));
+      box-shadow: 0 10px 22px rgba(36, 90, 196, .24);
+    }
+    .ghost { background: rgba(6, 14, 29, .82); box-shadow: none; }
+    .danger { background: linear-gradient(135deg, rgba(255,104,143,.94), rgba(190,58,103,.94)); box-shadow: 0 10px 22px rgba(153, 36, 74, .2); }
+    .search { display: grid; grid-template-columns: 1fr auto; gap: 12px; }
+    .field-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 12px; }
+    .field, .form { display: grid; gap: 10px; }
+    .field label { color: var(--muted); font-size: 13px; }
+    .audio audio { width: 100%; filter: hue-rotate(180deg) saturate(.74) brightness(.96); }
+    .empty { padding: 16px; border-radius: 16px; border: 1px dashed rgba(126, 167, 255, .24); background: rgba(4, 11, 23, .64); color: var(--muted); line-height: 1.6; }
+    .rec { display: flex; justify-content: space-between; gap: 12px; align-items: center; padding: 12px 14px; border-radius: 16px; background: rgba(4,11,23,.8); border: 1px solid rgba(126,167,255,.16); }
+    .preview {
+      min-height: 164px;
+      background: linear-gradient(160deg, rgba(5,12,24,.46), rgba(3,8,16,.72)), {% if background_url %}url({{ background_url|tojson }}){% else %}linear-gradient(135deg, rgba(108,168,255,.24), rgba(58,102,196,.08)){% endif %};
+      background-size: cover;
+      background-position: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .preview::after {
+      content: "{{ background_label }}";
+      position: absolute;
+      left: 14px;
+      bottom: 14px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(4, 11, 23, .82);
+      border: 1px solid rgba(126, 167, 255, .18);
+      font-size: 13px;
+    }
+    .game { padding: 16px; display: grid; gap: 12px; min-height: 320px; }
+    .scorebar { display: flex; justify-content: space-between; gap: 12px; color: var(--muted); font-size: 14px; }
+    .spots-board {
+      position: relative;
+      min-height: 210px;
+      border-radius: 18px;
+      border: 1px dashed rgba(126,167,255,.24);
+      background: linear-gradient(180deg, rgba(3,9,18,.96), rgba(6,15,29,.84));
+      overflow: hidden;
+    }
+    .spot {
+      position: absolute;
+      width: 42px;
+      height: 42px;
+      border: 0;
+      border-radius: 50%;
+      background: radial-gradient(circle at 30% 30%, #d7f8ff, #6cb2ff 40%, #2f4fff 100%);
+      box-shadow: 0 0 22px rgba(108, 178, 255, .55);
+    }
+    #snake-board {
+      width: 100%;
+      max-width: 280px;
+      aspect-ratio: 1;
+      border-radius: 18px;
+      border: 1px dashed rgba(126,167,255,.24);
+      background: rgba(3, 9, 18, .92);
+      justify-self: center;
+    }
+    .calc-display {
+      min-height: 68px;
+      padding: 14px;
+      border-radius: 16px;
+      background: rgba(3, 9, 18, .92);
+      border: 1px solid rgba(126,167,255,.16);
+      text-align: right;
+      font-size: 1.55rem;
+      letter-spacing: .04em;
+    }
+    .calc-grid { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 10px; }
+    .calc-grid button { min-height: 54px; padding: 0; }
+    .wide { grid-column: span 2; }
+    @media (max-width: 1120px) { .hero-grid, .dashboard, .panel-grid, .arcade, .field-grid { grid-template-columns: 1fr; } }
+    @media (max-width: 720px) { .shell { width: min(100% - 20px, 1380px); padding-top: 14px; } .hero, .card { padding: 16px; border-radius: 18px; } .search, .item, .provider { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <section class="hero">
+      <div class="eyebrow">Dark Search Player</div>
+      <div class="hero-grid">
+        <div class="stack" style="gap:12px;">
+          <h1 class="title">{{ ui.app_name }}</h1>
+          <p class="sub">{{ ui.tagline }}</p>
+          <p class="sub">{{ ui.hero_note }}</p>
+          <div class="chips">
+            <div class="chip">{{ ui.background_mode }}: {{ background_label }}</div>
+            <div class="chip">EQ: {{ state.eq_preset }}</div>
+            <div class="chip">{{ ui.language }}: {{ state.language|upper }}</div>
+          </div>
+        </div>
+        <div class="stack" style="gap:12px;">
+          <form class="search" method="get">
+            <input type="text" name="q" value="{{ query }}" placeholder="{{ ui.search_placeholder }}">
+            <button type="submit">{{ ui.search_button }}</button>
+          </form>
+          <div class="box">
+            <strong>{{ ui.lyrics }}</strong>
+            <p class="hint">{{ ui.lyrics_note }}</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        <section class="stack" style="margin-bottom:18px;">
+          {% for message in messages %}
+            <div class="msg">{{ message }}</div>
+          {% endfor %}
+        </section>
+      {% endif %}
+    {% endwith %}
+
+    <section class="dashboard">
+      <div class="stack">
+        <article class="card">
+          <h2>{{ ui.current_track }}</h2>
+          {% if current_track and current_track_index is not none %}
+            <div class="audio stack" style="gap:14px;">
+              <div class="box">
+                <strong>{{ current_track.title }}</strong>
+                <div class="hint">{{ current_track.source }}</div>
+              </div>
+              <audio id="local-audio" controls preload="metadata" src="{{ url_for('stream', track_id=current_track_index) }}"></audio>
+            </div>
+          {% else %}
+            <div class="empty">{{ ui.no_track }}</div>
+          {% endif %}
+        </article>
+
+        <article class="card">
+          <h2>{{ ui.library }}</h2>
+          <p class="sub">{{ ui.empty_library }}</p>
+          <form class="form" method="post" action="{{ url_for('upload_tracks') }}" enctype="multipart/form-data">
+            <input type="file" name="tracks" accept=".mp3,.wav,.flac,.ogg,.m4a,audio/*" multiple>
+            <button type="submit">{{ ui.upload_tracks }}</button>
+          </form>
+          {% if state.library %}
+            <div class="list">
+              {% for track in state.library %}
+                <div class="item">
+                  <div>
+                    <strong>{{ track.title }}</strong>
+                    <small>{{ track.source }}</small>
+                  </div>
+                  <form method="post" action="{{ url_for('select_track', track_id=loop.index0) }}">
+                    <button type="submit">{{ ui.play_local }}</button>
+                  </form>
+                </div>
+              {% endfor %}
+            </div>
+          {% else %}
+            <div class="empty">{{ ui.empty_library }}</div>
+          {% endif %}
+        </article>
+
+        <article class="card">
+          <h2>{{ ui.platform_results }}</h2>
+          <p class="sub">{{ ui.hero_note }}</p>
+          {% if search_results %}
+            <div class="providers">
+              {% for item in search_results %}
+                <div class="provider item">
+                  <div>
+                    <strong>{{ item.provider }}</strong>
+                    <small>{{ query }}</small>
+                    <div class="hint">{{ item.hint }}</div>
+                  </div>
+                  <div class="actions">
+                    <a class="button" href="{{ item.url }}" target="_blank" rel="noreferrer">{{ ui.listen }}</a>
+                    <a class="button ghost" href="{{ item.text_url }}" target="_blank" rel="noreferrer">{{ ui.text_view }}</a>
+                  </div>
+                </div>
+              {% endfor %}
+            </div>
+          {% else %}
+            <div class="empty">{{ ui.empty_results }}</div>
+          {% endif %}
+        </article>
+      </div>
+
+      <div class="stack">
+        <article class="card">
+          <h2>{{ ui.recommendations }}</h2>
+          <p class="sub">{{ ui.query_caption }}</p>
+          {% if recommendations %}
+            <div class="recs">
+              {% for item in recommendations %}
+                <div class="rec">
+                  <strong>{{ item }}</strong>
+                  <a class="button ghost" href="/?q={{ item|urlencode }}">{{ ui.open }}</a>
+                </div>
+              {% endfor %}
+            </div>
+          {% else %}
+            <div class="empty">{{ ui.empty_recommendations }}</div>
+          {% endif %}
+        </article>
+
+        <article class="card">
+          <h2>{{ ui.lyrics }}</h2>
+          <p class="sub">{{ ui.lyrics_note }}</p>
+          {% if lyrics_links %}
+            <div class="lyrics">
+              {% for item in lyrics_links %}
+                <div class="provider item">
+                  <div>
+                    <strong>{{ item.name }}</strong>
+                    <small>{{ query }}</small>
+                  </div>
+                  <a class="button" href="{{ item.url }}" target="_blank" rel="noreferrer">{{ ui.open }}</a>
+                </div>
+              {% endfor %}
+            </div>
+          {% else %}
+            <div class="empty">{{ ui.empty_results }}</div>
+          {% endif %}
+        </article>
+
+        <article class="card">
+          <h2>{{ ui.options }}</h2>
+          <p class="sub">{{ ui.token_note }}</p>
+          <div class="panel-grid">
+            <section class="box">
+              <h3>{{ ui.language }}</h3>
+              <form class="form" method="post" action="{{ url_for('update_language') }}">
+                <select name="language">
+                  <option value="en" {% if state.language == "en" %}selected{% endif %}>English</option>
+                  <option value="ru" {% if state.language == "ru" %}selected{% endif %}>Русский</option>
+                </select>
+                <button type="submit">{{ ui.save_language }}</button>
+              </form>
+            </section>
+
+            <section class="box">
+              <h3>{{ ui.audio_lab }}</h3>
+              <form class="form" method="post" action="{{ url_for('update_audio') }}">
+                <div class="field">
+                  <label>{{ ui.equalizer }}</label>
+                  <select id="eq-select" name="eq_preset">
+                    {% for preset in eq_presets %}
+                      <option value="{{ preset }}" {% if preset == state.eq_preset %}selected{% endif %}>{{ preset }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+                <div class="field">
+                  <label>{{ ui.speed }}</label>
+                  <select id="speed-select" name="speed_preset">
+                    {% for preset in speed_presets %}
+                      <option value="{{ preset }}" {% if preset == state.speed_preset %}selected{% endif %}>{{ preset }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+                <button type="submit">{{ ui.save_audio }}</button>
+              </form>
+            </section>
+          </div>
+
+          <section class="box">
+            <h3>{{ ui.backgrounds }}</h3>
+            <div class="preview"></div>
+            <p class="footnote">{{ ui.background_hint }}</p>
+            <div class="field-grid" style="margin-top:10px;">
+              <form class="form" method="post" action="{{ url_for('update_background') }}" enctype="multipart/form-data">
+                <input type="hidden" name="mode" value="upload">
+                <label>{{ ui.upload_background }}</label>
+                <input type="file" name="background_file" accept="image/*,.gif">
+                <button type="submit">{{ ui.apply_background }}</button>
+              </form>
+              <form class="form" method="post" action="{{ url_for('update_background') }}">
+                <input type="hidden" name="mode" value="url">
+                <label>{{ ui.set_background_url }}</label>
+                <input type="text" name="background_url" placeholder="https://example.com/cover.gif">
+                <button type="submit">{{ ui.apply_background }}</button>
+              </form>
+              <form class="form" method="post" action="{{ url_for('update_background') }}">
+                <input type="hidden" name="mode" value="paste">
+                <label>{{ ui.paste_background }}</label>
+                <textarea name="background_paste" rows="4" placeholder="C:\Images\cover.gif or data:image/..."></textarea>
+                <button type="submit">{{ ui.apply_background }}</button>
+              </form>
+              <form class="form" method="post" action="{{ url_for('update_background') }}">
+                <input type="hidden" name="mode" value="reset">
+                <label>{{ ui.background_mode }}</label>
+                <input type="text" value="{{ background_label }}" readonly>
+                <button class="danger" type="submit">{{ ui.reset_background }}</button>
+              </form>
+            </div>
+          </section>
+
+          <section class="box">
+            <h3>{{ ui.tokens }}</h3>
+            <form class="form" method="post" action="{{ url_for('update_tokens') }}">
+              <div class="field-grid">
+                {% for field, label in token_fields %}
+                  <div class="field">
+                    <label>{{ label }}</label>
+                    <input type="text" name="{{ field }}" value="{{ state.tokens[field] }}">
+                  </div>
+                {% endfor %}
+              </div>
+              <div class="footnote">{{ ui.token_note }}</div>
+              <button type="submit">{{ ui.save_tokens }}</button>
+            </form>
+          </section>
+        </article>
+
+        <article class="card">
+          <h2>{{ ui.arcade }}</h2>
+          <p class="sub">Spots, Snake, and Calculator stay inside the same dashboard.</p>
+          <div class="arcade">
+            <section class="game">
+              <h3>{{ ui.spots }}</h3>
+              <div class="scorebar"><span>{{ ui.score }}: <strong id="spots-score">0</strong></span><span>{{ ui.best }}: <strong id="spots-best">0</strong></span></div>
+              <div class="spots-board" id="spots-board"></div>
+              <div class="actions"><button type="button" id="spots-start">{{ ui.start }}</button><button type="button" class="ghost" id="spots-reset">{{ ui.reset }}</button></div>
+            </section>
+            <section class="game">
+              <h3>{{ ui.snake }}</h3>
+              <div class="scorebar"><span>{{ ui.score }}: <strong id="snake-score">0</strong></span><span>{{ ui.best }}: <strong id="snake-best">0</strong></span></div>
+              <canvas id="snake-board" width="280" height="280"></canvas>
+              <div class="actions"><button type="button" id="snake-start">{{ ui.start }}</button><button type="button" class="ghost" id="snake-reset">{{ ui.reset }}</button></div>
+            </section>
+            <section class="game">
+              <h3>{{ ui.calculator }}</h3>
+              <div class="calc">
+                <div class="calc-display" id="calc-display">0</div>
+                <div class="calc-grid" id="calc-grid">
+                  <button type="button" class="ghost" data-calc="C">C</button><button type="button" class="ghost" data-calc="+/-">+/-</button><button type="button" class="ghost" data-calc="%">%</button><button type="button" data-calc="/">/</button>
+                  <button type="button" data-calc="7">7</button><button type="button" data-calc="8">8</button><button type="button" data-calc="9">9</button><button type="button" data-calc="*">*</button>
+                  <button type="button" data-calc="4">4</button><button type="button" data-calc="5">5</button><button type="button" data-calc="6">6</button><button type="button" data-calc="-">-</button>
+                  <button type="button" data-calc="1">1</button><button type="button" data-calc="2">2</button><button type="button" data-calc="3">3</button><button type="button" data-calc="+">+</button>
+                  <button type="button" class="wide" data-calc="0">0</button><button type="button" data-calc=".">.</button><button type="button" data-calc="=">=</button>
+                </div>
+              </div>
+            </section>
+          </div>
+        </article>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const eqProfiles = {{ eq_profiles|tojson }};
+    const speedValues = {{ speed_values|tojson }};
+    const audio = document.getElementById("local-audio");
+    const eqSelect = document.getElementById("eq-select");
+    const speedSelect = document.getElementById("speed-select");
+    let audioContext = null, mediaSource = null, low = null, mid = null, high = null;
+    function ensureAudioChain() {
+      if (!audio || mediaSource) return;
+      const Ctx = window.AudioContext || window.webkitAudioContext;
+      if (!Ctx) return;
+      audioContext = new Ctx();
+      mediaSource = audioContext.createMediaElementSource(audio);
+      low = audioContext.createBiquadFilter(); low.type = "lowshelf"; low.frequency.value = 280;
+      mid = audioContext.createBiquadFilter(); mid.type = "peaking"; mid.frequency.value = 1200; mid.Q.value = .8;
+      high = audioContext.createBiquadFilter(); high.type = "highshelf"; high.frequency.value = 3200;
+      mediaSource.connect(low); low.connect(mid); mid.connect(high); high.connect(audioContext.destination);
+    }
+    function applyAudioProfile() {
+      if (!audio) return;
+      audio.playbackRate = speedValues[(speedSelect && speedSelect.value) || "Normal"] || 1;
+      if (!low || !mid || !high) return;
+      const preset = eqProfiles[(eqSelect && eqSelect.value) || "Flat"] || eqProfiles.Flat;
+      low.gain.value = preset.low; mid.gain.value = preset.mid; high.gain.value = preset.high;
+    }
+    if (audio) {
+      audio.addEventListener("play", async () => { ensureAudioChain(); if (audioContext && audioContext.state === "suspended") await audioContext.resume(); applyAudioProfile(); });
+      audio.addEventListener("loadedmetadata", applyAudioProfile);
+    }
+    if (eqSelect) eqSelect.addEventListener("change", () => { ensureAudioChain(); applyAudioProfile(); });
+    if (speedSelect) speedSelect.addEventListener("change", applyAudioProfile);
+
+    const spotsBoard = document.getElementById("spots-board");
+    const spotsScoreEl = document.getElementById("spots-score");
+    const spotsBestEl = document.getElementById("spots-best");
+    let spotsTimer = null, spotsRound = null, spotsScore = 0;
+    spotsBestEl.textContent = localStorage.getItem("pulse_spots_best") || "0";
+    function clearSpots() { spotsBoard.innerHTML = ""; }
+    function spawnSpot() {
+      clearSpots();
+      const spot = document.createElement("button");
+      spot.className = "spot";
+      spot.style.left = `${Math.random() * Math.max(0, spotsBoard.clientWidth - 42)}px`;
+      spot.style.top = `${Math.random() * Math.max(0, spotsBoard.clientHeight - 42)}px`;
+      spot.addEventListener("click", () => { spotsScore += 1; spotsScoreEl.textContent = String(spotsScore); spawnSpot(); });
+      spotsBoard.appendChild(spot);
+    }
+    function finishSpots() {
+      clearInterval(spotsTimer); clearTimeout(spotsRound);
+      spotsTimer = null; spotsRound = null; clearSpots();
+      const best = Number(localStorage.getItem("pulse_spots_best") || 0);
+      if (spotsScore > best) { localStorage.setItem("pulse_spots_best", String(spotsScore)); spotsBestEl.textContent = String(spotsScore); }
+    }
+    document.getElementById("spots-start").addEventListener("click", () => { spotsScore = 0; spotsScoreEl.textContent = "0"; finishSpots(); spawnSpot(); spotsTimer = setInterval(spawnSpot, 850); spotsRound = setTimeout(finishSpots, 20000); });
+    document.getElementById("spots-reset").addEventListener("click", () => { spotsScore = 0; spotsScoreEl.textContent = "0"; finishSpots(); });
+
+    const snakeCanvas = document.getElementById("snake-board"), snakeCtx = snakeCanvas.getContext("2d");
+    const snakeScoreEl = document.getElementById("snake-score"), snakeBestEl = document.getElementById("snake-best");
+    const grid = 14; let snakeLoop = null, snake = [{x: 7, y: 7}], dir = {x: 1, y: 0}, food = {x: 12, y: 12}, snakeScore = 0;
+    snakeBestEl.textContent = localStorage.getItem("pulse_snake_best") || "0";
+    function placeFood() { food = { x: Math.floor(Math.random() * (snakeCanvas.width / grid)), y: Math.floor(Math.random() * (snakeCanvas.height / grid)) }; }
+    function drawSnake() {
+      snakeCtx.clearRect(0, 0, snakeCanvas.width, snakeCanvas.height);
+      snakeCtx.fillStyle = "#050b15"; snakeCtx.fillRect(0, 0, snakeCanvas.width, snakeCanvas.height);
+      snakeCtx.fillStyle = "#8eefff"; snakeCtx.fillRect(food.x * grid, food.y * grid, grid - 2, grid - 2);
+      snake.forEach((part, index) => { snakeCtx.fillStyle = index === 0 ? "#d6f6ff" : "#6ca8ff"; snakeCtx.fillRect(part.x * grid, part.y * grid, grid - 2, grid - 2); });
+    }
+    function resetSnake() { clearInterval(snakeLoop); snakeLoop = null; snake = [{x: 7, y: 7}]; dir = {x: 1, y: 0}; snakeScore = 0; snakeScoreEl.textContent = "0"; placeFood(); drawSnake(); }
+    function tickSnake() {
+      const head = {x: snake[0].x + dir.x, y: snake[0].y + dir.y};
+      const max = snakeCanvas.width / grid;
+      if (head.x < 0 || head.y < 0 || head.x >= max || head.y >= max || snake.some(part => part.x === head.x && part.y === head.y)) {
+        const best = Number(localStorage.getItem("pulse_snake_best") || 0);
+        if (snakeScore > best) { localStorage.setItem("pulse_snake_best", String(snakeScore)); snakeBestEl.textContent = String(snakeScore); }
+        resetSnake(); return;
+      }
+      snake.unshift(head);
+      if (head.x === food.x && head.y === food.y) { snakeScore += 1; snakeScoreEl.textContent = String(snakeScore); placeFood(); } else { snake.pop(); }
+      drawSnake();
+    }
+    window.addEventListener("keydown", event => {
+      const map = { ArrowUp: {x: 0, y: -1}, ArrowDown: {x: 0, y: 1}, ArrowLeft: {x: -1, y: 0}, ArrowRight: {x: 1, y: 0} };
+      const next = map[event.key]; if (!next) return; if (next.x === -dir.x && next.y === -dir.y) return; dir = next;
+    });
+    document.getElementById("snake-start").addEventListener("click", () => { if (!snakeLoop) snakeLoop = setInterval(tickSnake, 150); });
+    document.getElementById("snake-reset").addEventListener("click", resetSnake);
+    resetSnake();
+
+    const calcDisplay = document.getElementById("calc-display");
+    let calcValue = "0";
+    function setCalc(value) { calcValue = value; calcDisplay.textContent = value; }
+    document.getElementById("calc-grid").addEventListener("click", event => {
+      const button = event.target.closest("button[data-calc]"); if (!button) return;
+      const token = button.dataset.calc;
+      if (token === "C") { setCalc("0"); return; }
+      if (token === "+/-") { setCalc(String(Number(calcValue || "0") * -1)); return; }
+      if (token === "%") { setCalc(String(Number(calcValue || "0") / 100)); return; }
+      if (token === "=") {
+        try { const safe = calcValue.replace(/[^0-9+\-*/.() ]/g, ""); setCalc(String(Function(`"use strict"; return (${safe || 0});`)())); }
+        catch (_error) { setCalc("Error"); }
+        return;
+      }
+      if (calcValue === "0" || calcValue === "Error") { setCalc(token); return; }
+      setCalc(calcValue + token);
+    });
+  </script>
+</body>
+</html>

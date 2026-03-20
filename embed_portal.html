@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PulseDock Embedded Player</title>
+  <style>
+    :root {
+      --bg: #0a0f16;
+      --surface: #111822;
+      --surface-2: #171f2c;
+      --line: #232d3d;
+      --text: #f3f6fb;
+      --muted: #93a0b4;
+      --accent: #7daeff;
+      --accent-2: #4b84f2;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Segoe UI", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(125, 174, 255, 0.16), transparent 28%),
+        linear-gradient(180deg, #0a0f16, #070b11 60%);
+    }
+    .shell {
+      width: min(1240px, calc(100% - 28px));
+      margin: 0 auto;
+      padding: 24px 0 36px;
+      display: grid;
+      gap: 18px;
+    }
+    .hero, .card {
+      background: linear-gradient(180deg, rgba(17, 24, 34, 0.96), rgba(23, 31, 44, 0.96));
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.28);
+    }
+    .hero, .card { padding: 20px; }
+    .hero h1, .hero p, .card h2, .card p { margin: 0; }
+    .hero, .card { display: grid; gap: 14px; }
+    .muted { color: var(--muted); line-height: 1.6; }
+    .toolbar {
+      display: grid;
+      grid-template-columns: 1fr auto auto;
+      gap: 12px;
+    }
+    input, button, a.button {
+      font: inherit;
+      border-radius: 14px;
+    }
+    input {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1px solid var(--line);
+      background: #0d141d;
+      color: var(--text);
+    }
+    button, a.button {
+      padding: 12px 16px;
+      border: 0;
+      text-decoration: none;
+      cursor: pointer;
+      color: var(--text);
+      background: linear-gradient(135deg, var(--accent-2), var(--accent));
+    }
+    .ghost {
+      background: var(--surface-2);
+      border: 1px solid var(--line);
+    }
+    .links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .result {
+      min-height: 560px;
+      display: grid;
+      gap: 12px;
+    }
+    iframe {
+      width: 100%;
+      min-height: 540px;
+      border: 0;
+      border-radius: 18px;
+      background: #0d141d;
+    }
+    @media (max-width: 820px) {
+      .toolbar {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <section class="hero">
+      <h1>PulseDock Embedded Player</h1>
+      <p class="muted">Paste an official Spotify, SoundCloud, or YouTube URL to load the supported player inside the app window. For search/discovery, use the app’s provider search buttons which open official service pages in this same embedded window.</p>
+      <div class="toolbar">
+        <input id="source-input" type="text" placeholder="Paste Spotify / SoundCloud / YouTube link">
+        <button id="load-button" type="button">Load Embed</button>
+        <button id="clear-button" class="ghost" type="button">Clear</button>
+      </div>
+      <div class="links">
+        <a class="button ghost" href="https://open.spotify.com/" target="_blank" rel="noreferrer">Spotify</a>
+        <a class="button ghost" href="https://soundcloud.com/" target="_blank" rel="noreferrer">SoundCloud</a>
+        <a class="button ghost" href="https://www.youtube.com/" target="_blank" rel="noreferrer">YouTube</a>
+      </div>
+      <div id="status" class="muted">Waiting for a supported official URL.</div>
+    </section>
+
+    <section class="card result">
+      <h2>Embed</h2>
+      <div id="embed-root" class="muted">No media loaded yet.</div>
+    </section>
+  </main>
+
+  <script src="./embed_portal.js"></script>
+</body>
+</html>
