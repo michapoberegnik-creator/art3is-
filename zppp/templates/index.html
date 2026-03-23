@@ -1,0 +1,1279 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wheel Of Tasks</title>
+  <style>
+    :root {
+      --bg1: #f1cf9a;
+      --bg2: #9a6748;
+      --panel: #6b4435;
+      --panel-2: #4c2f25;
+      --line: #20110c;
+      --text: #fff4e3;
+      --muted: #e7cbab;
+      --gold: #ffd25d;
+      --gold-2: #fff0a5;
+      --good: #81de8b;
+      --bad: #ff8d78;
+      --shadow: 8px 8px 0 rgba(20, 10, 7, 0.82);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Courier New", monospace;
+      color: var(--text);
+      background:
+        linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px),
+        linear-gradient(180deg, var(--bg1), var(--bg2));
+      background-size: 24px 24px, 24px 24px, 100% 100%;
+    }
+
+    body.spring { --bg1: #f0ced8; --bg2: #976274; }
+    body.summer { --bg1: #f1cd7d; --bg2: #a86944; }
+    body.autumn { --bg1: #d7894d; --bg2: #5b3628; }
+    body.winter { --bg1: #d8dfef; --bg2: #667391; }
+
+    .hidden { display: none !important; }
+    .view { min-height: 100vh; padding: 18px; }
+    .shell {
+      width: min(1400px, 100%);
+      margin: 0 auto;
+      background: linear-gradient(180deg, #6d4838, #41261f);
+      border: 4px solid var(--line);
+      box-shadow: var(--shadow);
+    }
+
+    .panel, .task-card, .shop-card, .stat, .plate, .lang-btn, .fortune-btn {
+      border: 4px solid var(--line);
+      box-shadow: 6px 6px 0 rgba(21, 10, 8, 0.78);
+    }
+
+    .panel { background: var(--panel); padding: 16px; }
+    .title {
+      margin: 0 0 10px;
+      font-size: clamp(34px, 4vw, 56px);
+      line-height: 1;
+      text-transform: uppercase;
+      text-shadow: 4px 4px 0 rgba(0,0,0,0.28);
+    }
+    .eyebrow {
+      color: var(--gold);
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+      font-size: 13px;
+      margin-bottom: 10px;
+    }
+    .subtitle, .small, .meta { color: var(--muted); line-height: 1.45; }
+
+    input, textarea, button { font: inherit; }
+    input, textarea {
+      width: 100%;
+      background: rgba(255,255,255,0.06);
+      color: var(--text);
+      border: 4px solid var(--line);
+      padding: 12px 14px;
+      box-shadow: inset 4px 4px 0 rgba(20,10,7,0.25);
+    }
+    button {
+      border: 4px solid var(--line);
+      padding: 12px 16px;
+      cursor: pointer;
+      font-weight: 700;
+      text-transform: uppercase;
+      box-shadow: 4px 4px 0 rgba(20,10,7,0.8);
+    }
+    button:hover { transform: translate(-1px, -1px); }
+    button:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
+    .primary { background: linear-gradient(180deg, var(--gold-2), var(--gold)); color: #2a1707; }
+    .ghost { background: #7a5646; color: var(--text); }
+    .success { background: linear-gradient(180deg, #c2f3c9, #7add89); color: #15311d; }
+    .danger { background: linear-gradient(180deg, #ffc0b1, #ff886f); color: #43140b; }
+
+    .register-grid, .game-grid { display: grid; grid-template-columns: 1fr 0.95fr; gap: 16px; }
+    .register-grid { align-items: start; }
+    .stack, .task-grid, .task-list, .shop-grid, .stats, .controls, .lang-row, .mode-row { display: grid; gap: 10px; }
+    .stats { grid-template-columns: repeat(4, 1fr); }
+    .stat { background: var(--panel-2); padding: 14px; }
+    .stat-label { display: block; color: var(--muted); font-size: 12px; text-transform: uppercase; margin-bottom: 8px; }
+    .stat-value { font-size: 24px; font-weight: 700; }
+
+    .scene {
+      position: relative;
+      min-height: 620px;
+      overflow: hidden;
+      border: 4px solid var(--line);
+      background: #d8b286;
+    }
+    .scene.bg-tiles {
+      background-image: url('{% static "assets/%D0%A1%D0%BD%D0%B8%D0%BC%D0%BE%D0%BA%20%D1%8D%D0%BA%D1%80%D0%B0%D0%BD%D0%B0%202026-03-18%20221417.png" %}');
+      background-size: 200% 200%;
+      background-repeat: no-repeat;
+    }
+    .scene.spring { background-position: 0 0; }
+    .scene.summer { background-position: 100% 0; }
+    .scene.autumn { background-position: 0 100%; }
+    .scene.winter { background-position: 100% 100%; }
+
+    .hero-layer {
+      position: absolute;
+      left: 70px;
+      bottom: 48px;
+      width: 300px;
+      height: 400px;
+      z-index: 4;
+    }
+    .hero { position: absolute; inset: 0; }
+    .hero .hair, .hero .bun, .hero .head, .hero .dress, .hero .arm, .hero .leg, .hero .sock, .hero .shoe, .hero .cup,
+    .mini .hair, .mini .head, .mini .dress {
+      position: absolute;
+      border: 4px solid var(--line);
+    }
+    .hero .hair { left: 58px; top: 22px; width: 110px; background: #60382b; z-index: 4; }
+    .hero .hair.bun { height: 108px; }
+    .hero .hair.short { height: 62px; }
+    .hero .hair.twin { height: 76px; width: 126px; left: 48px; }
+    .hero .bun { width: 46px; height: 46px; right: 92px; top: 4px; background: inherit; z-index: 5; }
+    .hero .head { left: 82px; top: 64px; width: 82px; height: 82px; background: #f1c6ad; z-index: 6; }
+    .hero .dress { left: 46px; top: 148px; width: 142px; height: 126px; background: #6f86b1; z-index: 3; }
+    .hero .arm { width: 92px; height: 24px; background: #f1c6ad; z-index: 7; }
+    .hero .arm.left { left: 154px; top: 164px; transform: rotate(-8deg); }
+    .hero .arm.right { left: 170px; top: 186px; transform: rotate(12deg); }
+    .hero .leg { width: 24px; height: 138px; background: #efc1a8; z-index: 2; }
+    .hero .leg.left { left: 110px; top: 256px; transform: rotate(16deg); }
+    .hero .leg.right { left: 164px; top: 244px; transform: rotate(-10deg); }
+    .hero .sock { width: 28px; height: 36px; background: #a1a7b7; z-index: 3; }
+    .hero .sock.left { left: 150px; top: 350px; }
+    .hero .sock.right { left: 182px; top: 334px; }
+    .hero .shoe { width: 56px; height: 22px; background: #7e6249; z-index: 3; }
+    .hero .shoe.left { left: 146px; top: 378px; }
+    .hero .shoe.right { left: 182px; top: 358px; }
+    .hero .cup { left: 212px; top: 118px; width: 42px; height: 46px; background: #f5ead4; z-index: 8; }
+    .hero .cup::after {
+      content: "";
+      position: absolute;
+      right: -12px;
+      top: 8px;
+      width: 12px;
+      height: 18px;
+      border: 4px solid var(--line);
+      border-left: 0;
+    }
+
+    .menu-image-wrap {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 665 / 518;
+      line-height: 0;
+      overflow: hidden;
+      background: #2a170d;
+    }
+    .menu-image-wrap img {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+    .menu-hotspot {
+      position: absolute;
+      left: 4%;
+      width: 21%;
+      height: 12%;
+      background: transparent;
+      border: 0;
+      box-shadow: none;
+      padding: 0;
+    }
+    .menu-hotspot.start { bottom: 14%; }
+    .menu-hotspot.options { bottom: 2%; }
+    .menu-hotspot:hover { transform: none; }
+
+    .menu-controls {
+      display: grid;
+      grid-template-columns: 1fr auto auto;
+      gap: 12px;
+      align-items: center;
+      padding: 16px;
+      border-top: 4px solid var(--line);
+      background: linear-gradient(180deg, #6c4738, #442821);
+      line-height: 1.3;
+    }
+    .menu-controls .small {
+      margin: 0;
+    }
+    .menu-action {
+      min-width: 170px;
+    }
+
+    .lang-panel {
+      position: absolute;
+      left: 2%;
+      top: 2%;
+      width: 260px;
+      border: 4px solid var(--line);
+      background: rgba(62, 34, 25, 0.92);
+      padding: 14px;
+      box-shadow: 6px 6px 0 rgba(20,10,7,0.8);
+    }
+    .lang-row { grid-template-columns: 1fr 1fr; }
+    .lang-btn { background: #7b5646; color: var(--text); padding: 12px; text-align: center; }
+    .lang-btn.active { background: linear-gradient(180deg, var(--gold-2), var(--gold)); color: #2a1707; }
+
+    .plate {
+      width: 170px;
+      background: linear-gradient(180deg, #e8c88e, #b98458);
+      color: #2d1807;
+      text-align: center;
+      padding: 16px 14px;
+      font-size: 24px;
+    }
+    .plate.small { font-size: 20px; }
+
+    .wheel-stage {
+      min-height: calc(100vh - 36px);
+      display: grid;
+      place-items: center;
+    }
+    .wheel-shell, .fortune-shell {
+      width: min(1280px, 100%);
+      background: linear-gradient(180deg, #603e31, #39211b);
+      border: 4px solid var(--line);
+      box-shadow: var(--shadow);
+      display: grid;
+      grid-template-columns: 1fr 360px;
+      position: relative;
+    }
+    .close-x, .fortune-close {
+      position: absolute;
+      top: 12px;
+      width: 56px;
+      height: 56px;
+      display: grid;
+      place-items: center;
+      background: #8a5b49;
+      color: var(--text);
+      border: 4px solid var(--line);
+      box-shadow: 4px 4px 0 rgba(22,11,8,0.75);
+      z-index: 5;
+    }
+    .close-x { left: 12px; }
+    .fortune-close { right: 12px; }
+    .close-x::before, .fortune-close::before { content: "X"; font-size: 24px; font-weight: 700; }
+    .wheel-area {
+      padding: 28px;
+      display: grid;
+      place-items: center;
+      position: relative;
+    }
+    .wheel-pointer {
+      position: absolute;
+      top: 32px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 0;
+      height: 0;
+      border-left: 20px solid transparent;
+      border-right: 20px solid transparent;
+      border-top: 40px solid var(--gold-2);
+      z-index: 3;
+    }
+    canvas { display: block; }
+    .setup-canvas { width: min(82vmin, 860px); aspect-ratio: 1; }
+    .fortune-canvas { width: min(100%, 420px); aspect-ratio: 1; margin: 0 auto; }
+    .wheel-side {
+      border-left: 4px solid var(--line);
+      padding: 72px 18px 18px;
+      display: grid;
+      align-content: start;
+      gap: 12px;
+    }
+    .spin-controls {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .info-box, .message {
+      border: 4px solid var(--line);
+      background: rgba(255,255,255,0.06);
+      padding: 14px;
+      box-shadow: inset 4px 4px 0 rgba(22,11,8,0.25);
+      line-height: 1.45;
+    }
+    .message.good { background: rgba(129,222,139,0.12); color: #effff3; }
+    .message.bad { background: rgba(255,141,120,0.12); color: #fff0eb; }
+    .mode-row { grid-template-columns: 1fr 1fr; }
+
+    .task-list { display: grid; gap: 10px; }
+    .task-editor { display: grid; gap: 8px; }
+    .register-grid .stack {
+      align-content: start;
+      max-height: 620px;
+      overflow: auto;
+      padding-right: 6px;
+    }
+    .task-row {
+      display: grid;
+      grid-template-columns: 1fr auto auto auto;
+      gap: 8px;
+      align-items: center;
+    }
+    .task-row input {
+      margin: 0;
+    }
+    #registerScene {
+      height: 620px;
+      min-height: 620px;
+    }
+    .icon-btn {
+      min-width: 46px;
+      padding: 10px 12px;
+    }
+    .task-card {
+      background: var(--panel);
+      padding: 14px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      align-items: center;
+    }
+    .task-card.done { opacity: 0.58; background: #59483f; }
+
+    .fortune-btn {
+      position: absolute;
+      right: 18px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 210px;
+      background: linear-gradient(180deg, #f0d08f, #bf885a);
+      color: #2b1708;
+      text-align: center;
+      padding: 18px 14px;
+      cursor: pointer;
+      z-index: 7;
+    }
+    .fortune-btn:hover {
+      transform: translateY(-50%);
+    }
+
+    .fortune-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(23,11,8,0.78);
+      display: grid;
+      place-items: center;
+      padding: 20px;
+      z-index: 20;
+    }
+
+    .shop-grid { grid-template-columns: repeat(2, 1fr); }
+    .shop-card { background: var(--panel); padding: 12px; display: grid; gap: 10px; }
+
+    .mini-wrap { display: grid; grid-template-columns: 104px 1fr; gap: 14px; align-items: center; }
+    .mini-box {
+      height: 144px;
+      display: grid;
+      place-items: center;
+      border: 4px solid var(--line);
+      background: linear-gradient(180deg, #ccb48f, #9c7151);
+    }
+    .mini { position: relative; width: 74px; height: 118px; }
+    .mini .hair { left: 12px; top: 0; width: 44px; background: #60382b; }
+    .mini .hair.bun { height: 42px; }
+    .mini .hair.short { height: 26px; }
+    .mini .hair.twin { height: 32px; width: 50px; left: 8px; }
+    .mini .head { left: 18px; top: 22px; width: 34px; height: 34px; background: #f1c6ad; }
+    .mini .dress { left: 14px; top: 58px; width: 42px; height: 42px; background: #6f86b1; }
+
+    @media (max-width: 1180px) {
+      body.device-mobile .register-grid,
+      body.device-mobile .game-grid,
+      body.device-mobile .wheel-shell,
+      body.device-mobile .fortune-shell { grid-template-columns: 1fr; }
+      body.device-mobile .wheel-side { border-left: 0; border-top: 4px solid var(--line); }
+      body.device-mobile .scene { min-height: 520px; }
+      body.device-mobile .fortune-btn { top: auto; bottom: 18px; transform: none; }
+      body.device-mobile .fortune-btn:hover { transform: none; }
+    }
+    @media (max-width: 860px) {
+      body.device-mobile .view {
+        min-height: auto;
+        padding: 8px;
+      }
+      body.device-mobile .shell { width: 100%; }
+      body.device-mobile .panel { padding: 10px; }
+      body.device-mobile .title {
+        font-size: clamp(28px, 8vw, 36px);
+        line-height: 1.05;
+      }
+      body.device-mobile .subtitle,
+      body.device-mobile .small,
+      body.device-mobile .meta,
+      body.device-mobile .info-box,
+      body.device-mobile .message,
+      body.device-mobile .stat-label {
+        font-size: 20px;
+        line-height: 1.35;
+      }
+      body.device-mobile button,
+      body.device-mobile input,
+      body.device-mobile textarea,
+      body.device-mobile .task-card strong,
+      body.device-mobile .task-card .small,
+      body.device-mobile .lang-btn,
+      body.device-mobile .menu-action {
+        font-size: 20px;
+      }
+      body.device-mobile .stats,
+      body.device-mobile .task-grid,
+      body.device-mobile .shop-grid,
+      body.device-mobile .lang-row,
+      body.device-mobile .mode-row,
+      body.device-mobile .mini-wrap,
+      body.device-mobile .spin-controls,
+      body.device-mobile .task-row { grid-template-columns: 1fr; }
+      body.device-mobile .register-grid,
+      body.device-mobile .game-grid {
+        gap: 10px;
+      }
+      body.device-mobile .stats { gap: 8px; }
+      body.device-mobile .stat { padding: 10px; }
+      body.device-mobile .stat-value { font-size: 24px; }
+      body.device-mobile .register-grid .stack {
+        max-height: none;
+        overflow: visible;
+        padding-right: 0;
+      }
+      body.device-mobile .scene { min-height: 300px; }
+      body.device-mobile #registerScene {
+        height: auto;
+        min-height: 300px;
+      }
+      body.device-mobile .hero-layer {
+        left: 4px;
+        bottom: 8px;
+        transform: scale(0.5);
+        transform-origin: left bottom;
+      }
+      body.device-mobile .fortune-btn {
+        left: 12px;
+        right: 12px;
+        bottom: 12px;
+        width: auto;
+        padding: 12px 10px;
+      }
+      body.device-mobile .menu-controls {
+        grid-template-columns: 1fr;
+        padding: 10px;
+      }
+      body.device-mobile .menu-action {
+        width: 100%;
+        min-width: 0;
+      }
+      body.device-mobile .lang-panel {
+        left: 8px;
+        right: 8px;
+        top: 8px;
+        width: auto;
+      }
+      body.device-mobile .wheel-stage { min-height: auto; }
+      body.device-mobile .wheel-shell,
+      body.device-mobile .fortune-shell { width: 100%; }
+      body.device-mobile .wheel-area { padding: 44px 6px 8px; }
+      body.device-mobile .wheel-pointer {
+        top: 8px;
+        border-left-width: 12px;
+        border-right-width: 12px;
+        border-top-width: 24px;
+      }
+      body.device-mobile .setup-canvas { width: min(88vw, 420px); }
+      body.device-mobile .fortune-canvas { width: min(82vw, 280px); }
+      body.device-mobile .wheel-side { padding: 14px 10px 10px; }
+      body.device-mobile .close-x,
+      body.device-mobile .fortune-close {
+        top: 8px;
+        width: 42px;
+        height: 42px;
+      }
+      body.device-mobile .close-x { left: 8px; }
+      body.device-mobile .fortune-close { right: 8px; }
+      body.device-mobile .close-x::before,
+      body.device-mobile .fortune-close::before { font-size: 18px; }
+      body.device-mobile .fortune-modal { padding: 8px; }
+      body.device-mobile .task-card { grid-template-columns: 1fr; }
+      body.device-mobile .task-row { gap: 6px; }
+      body.device-mobile .icon-btn {
+        min-width: 0;
+        width: 100%;
+      }
+      body.device-mobile .menu-image-wrap { aspect-ratio: auto; }
+    }
+    @media (max-width: 520px) {
+      body.device-mobile .shell {
+        border-width: 3px;
+        box-shadow: 5px 5px 0 rgba(20, 10, 7, 0.82);
+      }
+      body.device-mobile .panel,
+      body.device-mobile .task-card,
+      body.device-mobile .shop-card,
+      body.device-mobile .stat,
+      body.device-mobile .plate,
+      body.device-mobile .lang-btn,
+      body.device-mobile .fortune-btn,
+      body.device-mobile button,
+      body.device-mobile input,
+      body.device-mobile textarea,
+      body.device-mobile .info-box,
+      body.device-mobile .message,
+      body.device-mobile .mini-box,
+      body.device-mobile .scene,
+      body.device-mobile .wheel-shell,
+      body.device-mobile .fortune-shell {
+        border-width: 3px;
+      }
+      body.device-mobile .title { margin-bottom: 8px; }
+      body.device-mobile .eyebrow {
+        font-size: 12px;
+        letter-spacing: 0.12em;
+      }
+      body.device-mobile .scene { min-height: 260px; }
+      body.device-mobile #registerScene {
+        min-height: 260px;
+      }
+      body.device-mobile .hero-layer { transform: scale(0.42); }
+      body.device-mobile .setup-canvas { width: min(86vw, 320px); }
+      body.device-mobile .fortune-canvas { width: min(76vw, 240px); }
+    }
+  </style>
+</head>
+<body class="summer">
+  <section class="view" id="registerView">
+    <div class="shell panel">
+      <div class="register-grid">
+        <div class="stack">
+          <div class="eyebrow" data-i="regEyebrow">Player Setup</div>
+          <h1 class="title" data-i="regTitle">Build Your Day</h1>
+          <p class="subtitle" data-i="regSubtitle">Register, enter 5 tasks in priority order, then the site sends them into a separate task wheel. The last task in the list has the highest chance to appear first.</p>
+          <input id="playerName" placeholder="Player name">
+          <div class="task-editor" id="registerTasks"></div>
+          <button class="ghost" id="addTaskBtn" type="button">+ Task</button>
+          <div class="info-box" data-i="priorityNote">Priority rule: slot 5 has the biggest weight on the fortune wheel, slot 1 has the smallest.</div>
+          <button class="primary" id="buildDayBtn" type="button" data-i="buildDay">Register And Build Day</button>
+        </div>
+        <div class="scene bg-tiles summer" id="registerScene">
+          <div class="hero-layer">
+            <div class="hero" id="registerHero">
+              <div class="hair bun" data-part="hair"></div><div class="bun" data-part="bun"></div><div class="head"></div><div class="dress" data-part="dress"></div>
+              <div class="arm left"></div><div class="arm right"></div><div class="leg left"></div><div class="leg right"></div>
+              <div class="sock left"></div><div class="sock right"></div><div class="shoe left"></div><div class="shoe right"></div><div class="cup"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="view hidden" id="setupView">
+    <div class="wheel-stage">
+      <div class="wheel-shell">
+        <button class="close-x" id="closeSetupBtn" type="button" disabled></button>
+        <div class="wheel-area">
+          <div class="wheel-pointer"></div>
+          <canvas id="setupCanvas" width="760" height="760" class="setup-canvas"></canvas>
+        </div>
+        <div class="wheel-side">
+          <div class="eyebrow" data-i="setupEyebrow">Task Order Wheel</div>
+          <h2 data-i="setupTitle">Spin All 5 Tasks</h2>
+          <p class="meta" data-i="setupSubtitle">This separate screen decides your schedule order. Spin until all 5 tasks are placed. Then close it with the pixel X.</p>
+          <div class="info-box"><strong data-i="spinsLeft">Spins Left:</strong> <span id="setupSpinsLeft">5</span></div>
+          <button class="primary" id="spinSetupBtn" type="button" data-i="spinWheel">Spin Wheel</button>
+          <div class="spin-controls">
+            <button class="ghost" id="setupSpeedBtn" type="button">x2 Speed: Off</button>
+            <button class="ghost" id="skipSetupBtn" type="button">Skip Spin</button>
+          </div>
+          <div class="info-box" id="setupOrderBox"></div>
+          <div class="message" id="setupMessage"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="view hidden" id="menuView">
+    <div class="shell panel" style="padding:0;">
+      <div class="menu-image-wrap">
+        <img src="{% static 'assets/%D0%A1%D0%BD%D0%B8%D0%BC%D0%BE%D0%BA%20%D1%8D%D0%BA%D1%80%D0%B0%D0%BD%D0%B0%202026-03-18%20221109.png' %}" alt="Main menu">
+        <div class="lang-panel hidden" id="languagePanel">
+          <div class="eyebrow" data-i="optionsTitle">Options</div>
+          <div class="small" data-i="langText">Select language</div>
+          <div class="lang-row">
+            <button class="lang-btn active" id="langEn" type="button">English</button>
+            <button class="lang-btn" id="langRu" type="button">Russian</button>
+          </div>
+          <div class="small" data-i="deviceText" style="margin-top:12px;">Select device layout</div>
+          <div class="lang-row">
+            <button class="lang-btn" id="devicePcBtn" type="button">PC</button>
+            <button class="lang-btn" id="deviceMobileBtn" type="button">Mobile</button>
+          </div>
+        </div>
+      </div>
+      <div class="menu-controls">
+        <p class="small" data-i="menuHint">Use Start to open the game and Options to switch language.</p>
+        <button class="primary menu-action" id="startGameBtn" type="button" data-i="startLabel">Start</button>
+        <button class="ghost menu-action" id="openOptionsBtn" type="button" data-i="optionsLabel">Options</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="view hidden" id="gameView">
+    <div class="shell panel">
+      <div class="eyebrow" data-i="gameEyebrow">Daily Schedule</div>
+      <h1 class="title" data-i="gameTitle">Play Session</h1>
+      <div class="game-grid">
+        <div class="stack">
+          <div class="stats">
+            <div class="stat"><span class="stat-label" data-i="coins">Coins</span><span class="stat-value" id="coinsValue">0</span></div>
+            <div class="stat"><span class="stat-label" data-i="completed">Completed</span><span class="stat-value" id="progressValue">0/5</span></div>
+            <div class="stat"><span class="stat-label" data-i="freeReward">Free Reward Spins</span><span class="stat-value" id="rewardSpinsValue">0</span></div>
+            <div class="stat"><span class="stat-label" data-i="language">Language</span><span class="stat-value" id="langValue">EN</span></div>
+          </div>
+          <div class="panel">
+            <h3 data-i="scheduleTitle">Your Schedule</h3>
+            <div class="task-list" id="gameTasks"></div>
+          </div>
+          <div class="panel">
+            <h3 data-i="customTitle">Avatar Customization</h3>
+            <p class="small" data-i="customSub">Changes update the heroine in the game scene and in the menu preview.</p>
+            <div class="mini-wrap">
+              <div class="mini-box">
+                <div class="mini" id="miniHero">
+                  <div class="hair bun" data-part="hair"></div><div class="head"></div><div class="dress" data-part="dress"></div>
+                </div>
+              </div>
+              <div class="small" id="customHint">Same avatar updates in the game scene and preview.</div>
+            </div>
+            <div class="shop-grid" id="shopGrid"></div>
+          </div>
+        </div>
+        <div class="panel" style="position:relative;">
+          <div class="scene bg-tiles summer" id="gameScene">
+            <div class="hero-layer">
+              <div class="hero" id="gameHero">
+                <div class="hair bun" data-part="hair"></div><div class="bun" data-part="bun"></div><div class="head"></div><div class="dress" data-part="dress"></div>
+                <div class="arm left"></div><div class="arm right"></div><div class="leg left"></div><div class="leg right"></div>
+                <div class="sock left"></div><div class="sock right"></div><div class="shoe left"></div><div class="shoe right"></div><div class="cup"></div>
+              </div>
+            </div>
+            <button class="fortune-btn" id="openFortuneBtn" type="button">
+              <div data-i="fortuneTitle">Fortune Wheels</div>
+              <div class="small" id="fortuneHint">Reward and punishment</div>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="fortune-modal hidden" id="fortuneModal">
+    <div class="fortune-shell">
+      <button class="fortune-close" id="closeFortuneBtn" type="button"></button>
+      <div class="wheel-area">
+        <div class="wheel-pointer"></div>
+        <canvas id="fortuneCanvas" width="620" height="620" class="fortune-canvas"></canvas>
+      </div>
+      <div class="wheel-side">
+        <div class="eyebrow" data-i="fortuneTitle">Fortune Wheels</div>
+        <h2 id="fortuneTitleLabel">Reward Wheel</h2>
+        <div class="info-box" id="fortuneInfo"></div>
+        <div class="mode-row">
+          <button class="success" id="rewardModeBtn" type="button">Reward</button>
+          <button class="danger" id="punishModeBtn" type="button">Punishment</button>
+        </div>
+        <button class="primary" id="spinFortuneBtn" type="button" data-i="spinWheel">Spin Wheel</button>
+        <div class="spin-controls">
+          <button class="ghost" id="fortuneSpeedBtn" type="button">x2 Speed: Off</button>
+          <button class="ghost" id="skipFortuneBtn" type="button">Skip Spin</button>
+        </div>
+        <div class="message" id="fortuneMessage"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const T = {
+      en: {
+        regEyebrow: "Player Setup", regTitle: "Build Your Day", regSubtitle: "Create your own task list, sort it by priority, then send it into a separate task wheel. The last task in the list has the highest chance to appear first.", priorityNote: "Priority rule: the last task has the biggest weight on the fortune wheel, the first task has the smallest.", buildDay: "Register And Build Day", setupEyebrow: "Task Order Wheel", setupTitle: "Spin All Tasks", setupSubtitle: "This separate screen decides your schedule order. Spin until all tasks are placed. Then close it with the pixel X.", spinsLeft: "Spins Left:", spinWheel: "Spin Wheel", optionsTitle: "Options", langText: "Select language", deviceText: "Select device layout", gameEyebrow: "Daily Schedule", gameTitle: "Play Session", coins: "Coins", completed: "Completed", freeReward: "Free Reward Spins", language: "Language", scheduleTitle: "Your Schedule", customTitle: "Avatar Customization", customSub: "Changes update the heroine in the game scene and in the menu preview.", fortuneTitle: "Fortune Wheels", menuHint: "Use Start to open the game and Options to switch language.", startLabel: "Start", optionsLabel: "Options", speedOff: "x2 Speed: Off", speedOn: "x2 Speed: On", skipSpin: "Skip Spin"
+      },
+      ru: {
+        regEyebrow: "Регистрация", regTitle: "Собери Свой День", regSubtitle: "Игрок вводит 5 задач по приоритету, потом сайт отправляет их в отдельное колесо задач. Последняя задача в списке имеет самый высокий шанс выпасть первой.", priorityNote: "Правило приоритета: 5 место имеет самый высокий вес на колесе, 1 место самый низкий.", buildDay: "Зарегистрироваться И Собрать День", setupEyebrow: "Колесо Задач", setupTitle: "Прокрути Все 5 Задач", setupSubtitle: "Этот отдельный экран определяет порядок расписания. Крути, пока все 5 задач не будут расставлены. Потом закрой экран пиксельным крестиком.", spinsLeft: "Осталось Прокрутов:", spinWheel: "Крутить Колесо", optionsTitle: "Опции", langText: "Выбери язык", gameEyebrow: "Расписание На День", gameTitle: "Игровой Процесс", coins: "Монеты", completed: "Выполнено", freeReward: "Бесплатные Прокруты Награды", language: "Язык", scheduleTitle: "Твое Расписание", customTitle: "Кастомизация Аватара", customSub: "Изменения обновляют героиню в игровой сцене и в превью.", fortuneTitle: "Колеса Фортуны", menuHint: "Нажми Start, чтобы открыть игру, и Options, чтобы сменить язык.", startLabel: "Start", optionsLabel: "Options"
+      }
+    };
+
+    const hairs = {
+      brown: { id: "brown", type: "hair", label: { en: "Brown Bun", ru: "Коричневый Пучок" }, cls: "bun", color: "#5f382b", bun: "#5f382b", price: 0 },
+      blonde: { id: "blonde", type: "hair", label: { en: "Blonde Updo", ru: "Светлый Пучок" }, cls: "short", color: "#d6bf87", bun: "#d6bf87", price: 500 },
+      twin: { id: "twin", type: "hair", label: { en: "Twin Tails", ru: "Хвостики" }, cls: "twin", color: "#7a4630", bun: "#7a4630", price: 500 }
+    };
+
+    const dresses = {
+      blue: { id: "blue", type: "dress", label: { en: "Blue Sweater", ru: "Синий Свитер" }, color: "#6d86b0", price: 0 },
+      green: { id: "green", type: "dress", label: { en: "Green Dress", ru: "Зеленое Платье" }, color: "#b9d6aa", price: 1000 },
+      yellow: { id: "yellow", type: "dress", label: { en: "Yellow Dress", ru: "Желтое Платье" }, color: "#e8c76e", price: 1500 },
+      winter: { id: "winter", type: "dress", label: { en: "Winter Sweater", ru: "Зимний Свитер" }, color: "#ddd8cb", price: 1800 }
+    };
+
+    const rewardSegments = [
+      { label: "50", value: 50, color: "#c97d44" },
+      { label: "650", value: 650, color: "#e0a95a" },
+      { label: "458", value: 458, color: "#d49253" },
+      { label: "1000 Jackpot", value: 1000, color: "#ffdf7a" },
+      { label: "579", value: 579, color: "#b86c3b" },
+      { label: "4", value: 4, color: "#efc891" }
+    ];
+
+    const punishSegments = [
+      { label: "TikTok 20m + Task", value: "TikTok 20m", color: "#cf6259", weight: 5 },
+      { label: "TikTok 40m + Task", value: "TikTok 40m", color: "#dd7368", weight: 4 },
+      { label: "YouTube 30m + Task", value: "YouTube 30m", color: "#b74a49", weight: 3 },
+      { label: "Instagram 20m + Task", value: "Instagram 20m", color: "#e18d76", weight: 3 },
+      { label: "No Social 2h + Task", value: "No Social 2h", color: "#983f3c", weight: 2 },
+      { label: "Instagram 40m + Task", value: "Instagram 40m", color: "#f0a28e", weight: 2 }
+    ];
+
+    const taskColors = ["#8f55d7", "#4ba96c", "#d77f48", "#4b7ed0", "#cc5d82", "#d0b14b", "#529f9a", "#cb6658"];
+    const state = { language: "en", playerName: "", season: "summer", deviceType: "desktop", deviceOverride: null, coins: 0, rewardSpins: 0, setupRotation: 0, fortuneRotation: 0, fortuneMode: "reward", tasksByPriority: [], setupRemaining: [], orderedTasks: [], owned: ["brown", "blue"], hair: "brown", dress: "blue", setupFast: false, fortuneFast: false, activeSpin: null };
+
+    const els = {
+      registerView: document.getElementById("registerView"), setupView: document.getElementById("setupView"), menuView: document.getElementById("menuView"), gameView: document.getElementById("gameView"),
+      registerTasks: document.getElementById("registerTasks"), addTaskBtn: document.getElementById("addTaskBtn"), playerName: document.getElementById("playerName"), buildDayBtn: document.getElementById("buildDayBtn"),
+      setupCanvas: document.getElementById("setupCanvas"), setupSpinsLeft: document.getElementById("setupSpinsLeft"), setupOrderBox: document.getElementById("setupOrderBox"), setupMessage: document.getElementById("setupMessage"), spinSetupBtn: document.getElementById("spinSetupBtn"), closeSetupBtn: document.getElementById("closeSetupBtn"), setupSpeedBtn: document.getElementById("setupSpeedBtn"), skipSetupBtn: document.getElementById("skipSetupBtn"),
+      startGameBtn: document.getElementById("startGameBtn"), openOptionsBtn: document.getElementById("openOptionsBtn"), languagePanel: document.getElementById("languagePanel"), langEn: document.getElementById("langEn"), langRu: document.getElementById("langRu"), devicePcBtn: document.getElementById("devicePcBtn"), deviceMobileBtn: document.getElementById("deviceMobileBtn"),
+      coinsValue: document.getElementById("coinsValue"), progressValue: document.getElementById("progressValue"), rewardSpinsValue: document.getElementById("rewardSpinsValue"), langValue: document.getElementById("langValue"), gameTasks: document.getElementById("gameTasks"), shopGrid: document.getElementById("shopGrid"),
+      openFortuneBtn: document.getElementById("openFortuneBtn"), fortuneHint: document.getElementById("fortuneHint"), fortuneModal: document.getElementById("fortuneModal"), closeFortuneBtn: document.getElementById("closeFortuneBtn"), fortuneCanvas: document.getElementById("fortuneCanvas"), fortuneTitleLabel: document.getElementById("fortuneTitleLabel"), fortuneInfo: document.getElementById("fortuneInfo"), rewardModeBtn: document.getElementById("rewardModeBtn"), punishModeBtn: document.getElementById("punishModeBtn"), spinFortuneBtn: document.getElementById("spinFortuneBtn"), fortuneMessage: document.getElementById("fortuneMessage"), fortuneSpeedBtn: document.getElementById("fortuneSpeedBtn"), skipFortuneBtn: document.getElementById("skipFortuneBtn"),
+      registerHero: document.getElementById("registerHero"), gameHero: document.getElementById("gameHero"), miniHero: document.getElementById("miniHero"),
+      registerScene: document.getElementById("registerScene"), gameScene: document.getElementById("gameScene")
+    };
+
+    const setupCtx = els.setupCanvas.getContext("2d");
+    const fortuneCtx = els.fortuneCanvas.getContext("2d");
+    const fullCircle = Math.PI * 2;
+
+    function tt(key) { return T[state.language][key] || key; }
+    function esc(text) { return text.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#39;"); }
+    function normalizeTaskText(text) { return text.toLowerCase().replace(/\s+/g, " ").trim(); }
+    function normalizeWords(text) { return normalizeTaskText(text).split(" ").filter(Boolean); }
+    function taskSimilarity(a, b) {
+      const left = normalizeTaskText(a);
+      const right = normalizeTaskText(b);
+      if (!left || !right) return 0;
+      if (left === right) return 1;
+      const leftWords = normalizeWords(a);
+      const rightWords = normalizeWords(b);
+      if (leftWords.length === rightWords.length) {
+        const sortedLeft = [...leftWords].sort().join(" ");
+        const sortedRight = [...rightWords].sort().join(" ");
+        if (sortedLeft === sortedRight) return 1;
+      }
+      const maxLen = Math.max(left.length, right.length);
+      if (!maxLen) return 0;
+      let same = 0;
+      for (let i = 0; i < Math.min(left.length, right.length); i += 1) {
+        if (left[i] === right[i]) same += 1;
+      }
+      return same / maxLen;
+    }
+    function makeTask(text, index) { return { id: `${Date.now()}-${index}-${Math.random()}`, text, weight: index + 1, done: false }; }
+    function weightedPick(arr) { const total = arr.reduce((s, a) => s + a.weight, 0); let r = Math.random() * total; for (const item of arr) { r -= item.weight; if (r <= 0) return item; } return arr[arr.length - 1]; }
+    function showView(name) { [["register", els.registerView], ["setup", els.setupView], ["menu", els.menuView], ["game", els.gameView]].forEach(([k, v]) => v.classList.toggle("hidden", k !== name)); }
+    function renderSpeedButtons() {
+      els.setupSpeedBtn.textContent = state.setupFast ? tt("speedOn") : tt("speedOff");
+      els.fortuneSpeedBtn.textContent = state.fortuneFast ? tt("speedOn") : tt("speedOff");
+      els.skipSetupBtn.textContent = tt("skipSpin");
+      els.skipFortuneBtn.textContent = tt("skipSpin");
+      els.skipSetupBtn.disabled = !state.activeSpin || state.activeSpin.kind !== "setup";
+      els.skipFortuneBtn.disabled = !state.activeSpin || state.activeSpin.kind !== "fortune";
+    }
+    function renderDeviceButtons() {
+      els.devicePcBtn.classList.toggle("active", state.deviceType === "desktop");
+      els.deviceMobileBtn.classList.toggle("active", state.deviceType === "mobile");
+    }
+    function setLang(lang) { state.language = lang; els.langEn.classList.toggle("active", lang === "en"); els.langRu.classList.toggle("active", lang === "ru"); document.querySelectorAll("[data-i]").forEach((node) => { node.textContent = tt(node.dataset.i); }); els.langValue.textContent = lang.toUpperCase(); renderDeviceButtons(); renderSpeedButtons(); renderSetupOrder(); renderGameTasks(); renderShop(); renderFortuneInfo(); }
+
+    function detectDeviceType() {
+      const ua = navigator.userAgent || "";
+      const isMobileUA = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua);
+      const isCoarse = window.matchMedia && window.matchMedia("(pointer: coarse)").matches;
+      return (isMobileUA || (isCoarse && window.innerWidth <= 1024)) ? "mobile" : "desktop";
+    }
+
+    function applyDeviceMode() {
+      state.deviceType = state.deviceOverride || detectDeviceType();
+      document.body.classList.remove("device-mobile", "device-desktop");
+      document.body.classList.add(`device-${state.deviceType}`);
+      renderDeviceButtons();
+    }
+
+    function setDeviceMode(mode) {
+      state.deviceOverride = mode;
+      applyDeviceMode();
+    }
+
+    function applySeason() {
+      document.body.classList.remove("spring", "summer", "autumn", "winter");
+      document.body.classList.add(state.season);
+      [els.registerScene, els.gameScene].forEach((scene) => { scene.classList.remove("spring", "summer", "autumn", "winter"); scene.classList.add(state.season); });
+    }
+
+    function applyHero(root) {
+      const hair = hairs[state.hair];
+      const dress = dresses[state.dress];
+      const hairNode = root.querySelector('[data-part="hair"]');
+      const bunNode = root.querySelector('[data-part="bun"]');
+      const dressNode = root.querySelector('[data-part="dress"]');
+      hairNode.className = `hair ${hair.cls}`;
+      hairNode.style.background = hair.color;
+      dressNode.style.background = dress.color;
+      if (bunNode) {
+        bunNode.style.background = hair.bun;
+        bunNode.style.display = hair.cls === "twin" ? "none" : "block";
+      }
+    }
+
+    function renderHeroes() { [els.registerHero, els.gameHero, els.miniHero].forEach(applyHero); }
+    function getTaskDrafts() {
+      return [...els.registerTasks.querySelectorAll(".task-input")].map((input) => input.value);
+    }
+
+    function buildTaskInputs(values = ["", "", ""]) {
+      els.registerTasks.innerHTML = "";
+      values.forEach((value, index) => {
+        const row = document.createElement("div");
+        row.className = "task-row";
+
+        const input = document.createElement("input");
+        input.className = "task-input";
+        input.value = value;
+        input.placeholder = `${index + 1}. ${index === values.length - 1 ? "Highest chance task" : "Task"}`;
+
+        const upBtn = document.createElement("button");
+        upBtn.type = "button";
+        upBtn.className = "ghost icon-btn";
+        upBtn.textContent = "↑";
+        upBtn.disabled = index === 0;
+        upBtn.addEventListener("click", () => moveTask(index, -1));
+
+        const downBtn = document.createElement("button");
+        downBtn.type = "button";
+        downBtn.className = "ghost icon-btn";
+        downBtn.textContent = "↓";
+        downBtn.disabled = index === values.length - 1;
+        downBtn.addEventListener("click", () => moveTask(index, 1));
+
+        const removeBtn = document.createElement("button");
+        removeBtn.type = "button";
+        removeBtn.className = "danger icon-btn";
+        removeBtn.textContent = "X";
+        removeBtn.disabled = values.length <= 1;
+        removeBtn.addEventListener("click", () => removeTask(index));
+
+        row.appendChild(input);
+        row.appendChild(upBtn);
+        row.appendChild(downBtn);
+        row.appendChild(removeBtn);
+        els.registerTasks.appendChild(row);
+      });
+    }
+
+    function moveTask(index, direction) {
+      const values = getTaskDrafts();
+      const nextIndex = index + direction;
+      if (nextIndex < 0 || nextIndex >= values.length) return;
+      [values[index], values[nextIndex]] = [values[nextIndex], values[index]];
+      buildTaskInputs(values);
+    }
+
+    function removeTask(index) {
+      const values = getTaskDrafts();
+      if (values.length <= 1) return;
+      values.splice(index, 1);
+      buildTaskInputs(values);
+    }
+
+    function addTask() {
+      const values = getTaskDrafts();
+      values.push("");
+      buildTaskInputs(values);
+    }
+
+    function drawWheel(ctx, canvas, segments, rotation, label) {
+      const cx = canvas.width / 2;
+      const cy = canvas.height / 2;
+      const radius = Math.min(cx, cy) - 36;
+      const angle = fullCircle / segments.length;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.rotate(rotation);
+      segments.forEach((segment, i) => {
+        const start = i * angle - Math.PI / 2;
+        const end = start + angle;
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.arc(0, 0, radius, start, end);
+        ctx.closePath();
+        ctx.fillStyle = segment.color;
+        ctx.fill();
+        ctx.lineWidth = 5;
+        ctx.strokeStyle = "#20120d";
+        ctx.stroke();
+        ctx.save();
+        ctx.rotate(start + angle / 2);
+        ctx.textAlign = "right";
+        ctx.fillStyle = "#fff8ef";
+        ctx.font = "bold 24px Courier New";
+        wrapText(ctx, segment.label, radius - 18, -8, 170, 24);
+        ctx.restore();
+      });
+      ctx.beginPath();
+      ctx.arc(0, 0, 86, 0, fullCircle);
+      ctx.fillStyle = "#56382d";
+      ctx.fill();
+      ctx.lineWidth = 8;
+      ctx.strokeStyle = "#ffd25d";
+      ctx.stroke();
+      ctx.fillStyle = "#fff0c1";
+      ctx.textAlign = "center";
+      ctx.font = "bold 24px Courier New";
+      ctx.fillText(label, 0, 8);
+      ctx.restore();
+    }
+
+    function wrapText(ctx, text, x, y, maxWidth, lineHeight) {
+      const words = text.split(" ");
+      let line = "";
+      let row = 0;
+      words.forEach((word) => {
+        const test = `${line}${word} `;
+        if (ctx.measureText(test).width > maxWidth && line) {
+          ctx.fillText(line.trim(), x, y + row * lineHeight);
+          line = `${word} `;
+          row += 1;
+        } else {
+          line = test;
+        }
+      });
+      if (line) ctx.fillText(line.trim(), x, y + row * lineHeight);
+    }
+
+    function getResolvedIndex(rotation, count) {
+      const angle = fullCircle / count;
+      const normalized = (((-rotation) % fullCircle) + fullCircle) % fullCircle;
+      return Math.min(count - 1, Math.floor(normalized / angle));
+    }
+
+    function spinWheel({ ctx, canvas, segments, rotationKey, label, winningIndex, onDone, fast = false, kind }) {
+      const angle = fullCircle / segments.length;
+      const targetAngle = winningIndex * angle - Math.PI / 2 + angle / 2;
+      const pointerAngle = -Math.PI / 2;
+      const startRotation = state[rotationKey];
+      const finalRotation = startRotation + fullCircle * (4 + Math.random() * 2) + (pointerAngle - targetAngle - (startRotation % fullCircle) + fullCircle) % fullCircle;
+      const startTime = performance.now();
+      const duration = fast ? 2250 : 4500;
+      let finished = false;
+      const finish = () => {
+        if (finished) return;
+        finished = true;
+        state[rotationKey] = ((finalRotation % fullCircle) + fullCircle) % fullCircle;
+        drawWheel(ctx, canvas, segments, state[rotationKey], label);
+        state.activeSpin = null;
+        renderSpeedButtons();
+        onDone(getResolvedIndex(state[rotationKey], segments.length));
+      };
+      state.activeSpin = { kind, skip: finish };
+      renderSpeedButtons();
+      function frame(now) {
+        if (finished) return;
+        const progress = Math.min((now - startTime) / duration, 1);
+        const eased = 1 - Math.pow(1 - progress, 4);
+        state[rotationKey] = startRotation + (finalRotation - startRotation) * eased;
+        drawWheel(ctx, canvas, segments, state[rotationKey], label);
+        if (progress < 1) {
+          requestAnimationFrame(frame);
+          return;
+        }
+        finish();
+      }
+      requestAnimationFrame(frame);
+    }
+
+    function buildDay() {
+      const name = els.playerName.value.trim();
+      const taskValues = [...document.querySelectorAll(".task-input")].map((input) => input.value.trim()).filter(Boolean);
+      if (!name || taskValues.length < 1) {
+        alert(state.language === "ru" ? "Введи имя и хотя бы 1 задачу." : "Enter a name and at least 1 task.");
+        return;
+      }
+      for (let i = 0; i < taskValues.length; i += 1) {
+        for (let j = i + 1; j < taskValues.length; j += 1) {
+          if (taskSimilarity(taskValues[i], taskValues[j]) >= 0.8) {
+            alert(state.language === "ru" ? "Нельзя запускать день с почти одинаковыми задачами или перестановкой тех же слов." : "You cannot start the day with near-duplicate tasks or the same words in a different order.");
+            return;
+          }
+        }
+      }
+      state.playerName = name;
+      state.tasksByPriority = taskValues.map(makeTask);
+      state.setupRemaining = state.tasksByPriority.map((task) => ({ ...task }));
+      state.orderedTasks = [];
+      state.setupRotation = 0;
+      els.closeSetupBtn.disabled = true;
+      renderSetupWheel();
+      renderSetupOrder();
+      els.setupMessage.textContent = state.language === "ru" ? "Крути колесо, чтобы определить первую задачу." : "Spin the wheel to determine the first task.";
+      showView("setup");
+    }
+
+    function renderSetupWheel() {
+      const segments = state.setupRemaining.length
+        ? state.setupRemaining.map((task, i) => ({ label: task.text, color: taskColors[i % taskColors.length] }))
+        : [{ label: state.language === "ru" ? "Готово" : "Done", color: "#81de8b" }];
+      drawWheel(setupCtx, els.setupCanvas, segments, state.setupRotation, state.language === "ru" ? "ЗАДАЧИ" : "TASKS");
+      els.setupSpinsLeft.textContent = String(state.setupRemaining.length);
+    }
+
+    function renderSetupOrder() {
+      els.setupOrderBox.innerHTML = state.orderedTasks.length
+        ? state.orderedTasks.map((task, i) => `${i + 1}. ${esc(task.text)}`).join("<br>")
+        : (state.language === "ru" ? "Порядок пока пуст." : "Order is empty.");
+    }
+
+    function spinSetup() {
+      if (!state.setupRemaining.length) return;
+      els.spinSetupBtn.disabled = true;
+      const chosen = weightedPick(state.setupRemaining);
+      const segments = state.setupRemaining.map((task, i) => ({ label: task.text, color: taskColors[i % taskColors.length] }));
+      const winningIndex = state.setupRemaining.findIndex((task) => task.text === chosen.text);
+      spinWheel({
+        ctx: setupCtx,
+        canvas: els.setupCanvas,
+        segments,
+        rotationKey: "setupRotation",
+        label: state.language === "ru" ? "ЗАДАЧИ" : "TASKS",
+        winningIndex,
+        fast: state.setupFast,
+        kind: "setup",
+        onDone(resolvedIndex) {
+          const resolvedTask = state.setupRemaining[resolvedIndex];
+          state.orderedTasks.push(resolvedTask);
+          state.setupRemaining = state.setupRemaining.filter((task) => task.id !== resolvedTask.id);
+          renderSetupWheel();
+          renderSetupOrder();
+          els.setupMessage.textContent = (state.language === "ru" ? "Выбрана задача: " : "Selected task: ") + resolvedTask.text;
+          els.spinSetupBtn.disabled = state.setupRemaining.length === 0;
+          if (!state.setupRemaining.length) {
+            els.closeSetupBtn.disabled = false;
+            els.setupMessage.textContent = state.language === "ru" ? "Все задачи расставлены. Закрой экран крестиком." : "All tasks placed. Close this screen with the pixel X.";
+          }
+        }
+      });
+    }
+
+    function openMenu() {
+      if (state.orderedTasks.length !== state.tasksByPriority.length) return;
+      renderGameTasks();
+      renderShop();
+      showView("menu");
+    }
+
+    function renderGameTasks() {
+      els.gameTasks.innerHTML = "";
+      state.orderedTasks.forEach((task, index) => {
+        const card = document.createElement("div");
+        card.className = `task-card${task.done ? " done" : ""}`;
+        card.innerHTML = `
+          <div>
+            <strong>${index + 1}. ${esc(task.text)}</strong>
+            <div class="small">${task.done ? (state.language === "ru" ? "Выполнено" : "Completed") : (state.language === "ru" ? "Завершение дает 1 бесплатный прокрут награды" : "Completion gives 1 free reward spin")}</div>
+          </div>
+        `;
+        const btn = document.createElement("button");
+        btn.className = task.done ? "ghost" : "success";
+        btn.textContent = task.done ? (state.language === "ru" ? "Готово" : "Done") : (state.language === "ru" ? "Выполнить" : "Complete");
+        btn.disabled = task.done;
+        btn.addEventListener("click", () => completeTask(index));
+        card.appendChild(btn);
+        els.gameTasks.appendChild(card);
+      });
+      els.progressValue.textContent = `${state.orderedTasks.filter((task) => task.done).length}/${state.orderedTasks.length}`;
+      els.coinsValue.textContent = String(state.coins);
+      els.rewardSpinsValue.textContent = String(state.rewardSpins);
+      els.langValue.textContent = state.language.toUpperCase();
+      els.fortuneHint.textContent = state.language === "ru" ? "Награда и наказание" : "Reward and punishment";
+    }
+
+    function completeTask(index) {
+      const task = state.orderedTasks[index];
+      if (!task || task.done) return;
+      task.done = true;
+      state.rewardSpins += 1;
+      renderGameTasks();
+      renderFortuneInfo();
+    }
+
+    function renderShop() {
+      const items = [...Object.values(hairs), ...Object.values(dresses)];
+      els.shopGrid.innerHTML = "";
+      items.forEach((item) => {
+        const owned = state.owned.includes(item.id);
+        const equipped = item.type === "hair" ? state.hair === item.id : state.dress === item.id;
+        const card = document.createElement("div");
+        card.className = "shop-card";
+        card.innerHTML = `<strong>${item.label[state.language]}</strong><div class="small">${item.price === 0 ? (state.language === "ru" ? "Стартовый предмет" : "Starter item") : `${item.price} ${tt("coins")}`}</div>`;
+        const btn = document.createElement("button");
+        if (equipped) {
+          btn.className = "ghost";
+          btn.textContent = state.language === "ru" ? "Надето" : "Equipped";
+          btn.disabled = true;
+        } else if (owned) {
+          btn.className = "primary";
+          btn.textContent = state.language === "ru" ? "Надеть" : "Equip";
+          btn.addEventListener("click", () => equipItem(item));
+        } else {
+          btn.className = "ghost";
+          btn.textContent = state.language === "ru" ? "Купить" : "Buy";
+          btn.disabled = state.coins < item.price;
+          btn.addEventListener("click", () => buyItem(item));
+        }
+        card.appendChild(btn);
+        els.shopGrid.appendChild(card);
+      });
+      renderHeroes();
+    }
+
+    function buyItem(item) {
+      if (state.coins < item.price) return;
+      state.coins -= item.price;
+      state.owned.push(item.id);
+      if (item.type === "hair") state.hair = item.id;
+      else state.dress = item.id;
+      renderShop();
+      renderGameTasks();
+    }
+
+    function equipItem(item) {
+      if (item.type === "hair") state.hair = item.id;
+      else state.dress = item.id;
+      renderShop();
+    }
+
+    function openFortune() {
+      state.fortuneRotation = 0;
+      els.fortuneModal.classList.remove("hidden");
+      renderFortuneInfo();
+      renderFortuneWheel();
+    }
+
+    function closeFortune() {
+      els.fortuneModal.classList.add("hidden");
+    }
+
+    function getPunishSegments() {
+      return punishSegments;
+    }
+
+    function renderFortuneInfo() {
+      els.fortuneTitleLabel.textContent = state.fortuneMode === "reward"
+        ? (state.language === "ru" ? "Колесо Наград" : "Reward Wheel")
+        : (state.language === "ru" ? "Колесо Наказаний" : "Punishment Wheel");
+      els.fortuneInfo.innerHTML = state.fortuneMode === "reward"
+        ? (state.language === "ru"
+          ? `Бесплатных прокрутов: <strong>${state.rewardSpins}</strong><br>Каждое выполненное задание дает 1 прокрут.`
+          : `Free reward spins: <strong>${state.rewardSpins}</strong><br>Each completed task gives 1 spin.`)
+        : (state.language === "ru"
+          ? "TikTok имеет самый высокий шанс. Остальные соцсети чуть ниже."
+          : "TikTok has the highest chance. Other socials are slightly lower.");
+      els.spinFortuneBtn.disabled = state.fortuneMode === "reward" && state.rewardSpins < 1;
+    }
+
+    function renderFortuneWheel() {
+      const segments = state.fortuneMode === "reward" ? rewardSegments : getPunishSegments();
+      drawWheel(fortuneCtx, els.fortuneCanvas, segments, state.fortuneRotation, state.fortuneMode === "reward" ? "REWARD" : "PUNISH");
+    }
+
+    function spinFortune() {
+      const segments = state.fortuneMode === "reward" ? rewardSegments : getPunishSegments();
+      if (state.fortuneMode === "reward" && state.rewardSpins < 1) return;
+      const winningIndex = state.fortuneMode === "reward"
+        ? Math.floor(Math.random() * segments.length)
+        : segments.findIndex((segment) => segment === weightedPick(segments));
+      els.spinFortuneBtn.disabled = true;
+      spinWheel({
+        ctx: fortuneCtx,
+        canvas: els.fortuneCanvas,
+        segments,
+        rotationKey: "fortuneRotation",
+        label: state.fortuneMode === "reward" ? "REWARD" : "PUNISH",
+        winningIndex,
+        fast: state.fortuneFast,
+        kind: "fortune",
+        onDone(resolvedIndex) {
+          const result = segments[resolvedIndex];
+          if (state.fortuneMode === "reward") {
+            state.coins += result.value;
+            state.rewardSpins -= 1;
+            els.fortuneMessage.textContent = state.language === "ru" ? `Награда: ${result.value} монет.` : `Reward: ${result.value} coins.`;
+          } else {
+            const extraTask = makeTask(state.language === "ru" ? `Доп. задача ${state.orderedTasks.length + 1}` : `Extra Task ${state.orderedTasks.length + 1}`, 4);
+            state.orderedTasks.unshift(extraTask);
+            els.fortuneMessage.textContent = state.language === "ru"
+              ? `Наказание: ${result.value} + доп. задача. Новая задача сразу добавлена в список.`
+              : `Punishment: ${result.value} + extra task. The new task was added to the list immediately.`;
+            renderGameTasks();
+            closeFortune();
+            return;
+          }
+          renderGameTasks();
+          renderShop();
+          renderFortuneInfo();
+        }
+      });
+    }
+
+    els.buildDayBtn.addEventListener("click", buildDay);
+    els.addTaskBtn.addEventListener("click", addTask);
+    els.spinSetupBtn.addEventListener("click", spinSetup);
+    els.closeSetupBtn.addEventListener("click", openMenu);
+    els.startGameBtn.addEventListener("click", () => showView("game"));
+    els.openOptionsBtn.addEventListener("click", () => els.languagePanel.classList.toggle("hidden"));
+    els.langEn.addEventListener("click", () => setLang("en"));
+    els.langRu.addEventListener("click", () => setLang("ru"));
+    els.devicePcBtn.addEventListener("click", () => setDeviceMode("desktop"));
+    els.deviceMobileBtn.addEventListener("click", () => setDeviceMode("mobile"));
+    els.setupSpeedBtn.addEventListener("click", () => { state.setupFast = !state.setupFast; renderSpeedButtons(); });
+    els.fortuneSpeedBtn.addEventListener("click", () => { state.fortuneFast = !state.fortuneFast; renderSpeedButtons(); });
+    els.skipSetupBtn.addEventListener("click", () => { if (state.activeSpin?.kind === "setup") state.activeSpin.skip(); });
+    els.skipFortuneBtn.addEventListener("click", () => { if (state.activeSpin?.kind === "fortune") state.activeSpin.skip(); });
+    els.openFortuneBtn.addEventListener("click", openFortune);
+    els.closeFortuneBtn.addEventListener("click", closeFortune);
+    els.rewardModeBtn.addEventListener("click", () => { state.fortuneMode = "reward"; state.fortuneRotation = 0; renderFortuneInfo(); renderFortuneWheel(); });
+    els.punishModeBtn.addEventListener("click", () => { state.fortuneMode = "punish"; state.fortuneRotation = 0; renderFortuneInfo(); renderFortuneWheel(); });
+    els.spinFortuneBtn.addEventListener("click", spinFortune);
+    window.addEventListener("resize", applyDeviceMode);
+
+    buildTaskInputs();
+    applyDeviceMode();
+    applySeason();
+    renderHeroes();
+    renderSetupWheel();
+    renderSetupOrder();
+    renderGameTasks();
+    renderShop();
+    renderSpeedButtons();
+    setLang("en");
+  </script>
+</body>
+</html>
